@@ -1,0 +1,25 @@
+# Gradle files
+.gradle/
+build/
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# IDE files
+.idea/
+*.iml
+.DS_Store
+
+# Keystore files
+*.jks
+*.keystore
+
+# Android Studio Profiler captures
+captures/
+
+# Google services file
+google-services.json
+
+# Lint results
+lint-results-debug.xml
+
