@@ -18,12 +18,6 @@ import io.github.jan.supabase.postgrest.Postgrest
 
 class MainActivity : ComponentActivity() {
 
-    val supabase = createSupabaseClient(
-        supabaseUrl = BuildConfig.SUPABASE_URL,
-        supabaseKey = BuildConfig.SUPABASE_KEY
-    ) {
-        install(Postgrest)
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

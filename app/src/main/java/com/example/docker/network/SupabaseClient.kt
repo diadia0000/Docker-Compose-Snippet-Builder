@@ -7,14 +7,12 @@ import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.serializer.KotlinXSerializer
 import kotlinx.serialization.json.Json
 
-object SupabaseClient {
-    // 建議將這些放在 local.properties 或 BuildConfig 以確保安全，測試時可先直接填
-    private const val SUPABASE_URL = "https://你的專案ID.supabase.co"
-    private const val SUPABASE_KEY = "你的_ANON_KEY"
+import com.example.docker.BuildConfig
 
+object SupabaseClient {
     val client = createSupabaseClient(
-        supabaseUrl = SUPABASE_URL,
-        supabaseKey = SUPABASE_KEY
+        supabaseUrl = BuildConfig.SUPABASE_URL,
+        supabaseKey = BuildConfig.SUPABASE_KEY
     ) {
         // 設定 JSON 序列化規則 (忽略未知的欄位，避免 App 崩潰)
         defaultSerializer = KotlinXSerializer(Json {

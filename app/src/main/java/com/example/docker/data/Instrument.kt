@@ -1,5 +1,5 @@
 package com.example.docker.data
-import kotlin.serialization.Serializable
+import kotlinx.serialization.Serializable
 @Serializable
 data class Instrument(
     val id: Int,
