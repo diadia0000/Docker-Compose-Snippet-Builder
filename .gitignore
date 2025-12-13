@@ -22,4 +22,4 @@ google-services.json
 
 # Lint results
 lint-results-debug.xml
-
+.idea/
