@@ -21,7 +21,7 @@ class DockerApplication : Application() {
             AppDatabase::class.java,
             "docker_snippet_db"
         )
-        .addMigrations(AppDatabase.MIGRATION_1_2)
+        .fallbackToDestructiveMigration()
         .addCallback(object : RoomDatabase.Callback() {
             override fun onCreate(db: SupportSQLiteDatabase) {
                 super.onCreate(db)

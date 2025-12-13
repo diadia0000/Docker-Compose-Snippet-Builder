@@ -12,18 +12,15 @@ data class ServiceTemplate(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     val name: String,
-    val image: String,
+    val image: String = "",
     val ports: String = "", // e.g., "8080:80"
     val volumes: String = "", // e.g., "/host:/container"
-
     @ColumnInfo(name = "env_vars")
     @SerialName("env_vars")
-    val envVars: String = "{}", // Stores JSON string e.g. {"KEY":"VALUE"}
-
-    @ColumnInfo(name = "restart_policy", defaultValue = "no")
+    val envVars: String = "", // JSON format for environment variables
+    @ColumnInfo(name = "restart_policy")
     @SerialName("restart_policy")
-    val restartPolicy: String = "no", // Default "no" (This is for V2)
-
+    val restartPolicy: String = "no",
     @ColumnInfo(name = "created_at")
     @SerialName("created_at")
     val createdAt: Long = System.currentTimeMillis()

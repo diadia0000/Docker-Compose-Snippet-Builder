@@ -10,9 +10,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import com.example.docker.utils.YamlGenerator
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 class TemplateViewModel(private val repository: TemplateRepository) : ViewModel() {
+
     private val _uiState = MutableStateFlow(TemplateUiState())
     val uiState: StateFlow<TemplateUiState> = _uiState.asStateFlow()
 
@@ -71,13 +74,49 @@ class TemplateViewModel(private val repository: TemplateRepository) : ViewModel(
             }
         }
     }
-    fun generateYaml(template: ServiceTemplate) {
-        val yaml = YamlGenerator.generateCombinedYaml(listOf(template))
-        _uiState.update { it.copy(generatedYaml = yaml) }
-    }
 
-    fun generateCombinedYaml(templates: List<ServiceTemplate>) {
-        val yaml = YamlGenerator.generateCombinedYaml(templates)
+    fun generateYaml(template: ServiceTemplate) {
+        val yaml = buildString {
+            append("version: '3.8'\n")
+            append("services:\n")
+            append("  ${template.name}:\n")
+            append("    image: ${template.image}\n")
+
+            if (template.ports.isNotBlank()) {
+                append("    ports:\n")
+                template.ports.split(",").forEach { port ->
+                    if (port.isNotBlank()) {
+                        append("      - \"${port.trim()}\"\n")
+                    }
+                }
+            }
+
+            if (template.volumes.isNotBlank()) {
+                append("    volumes:\n")
+                template.volumes.split(",").forEach { vol ->
+                    if (vol.isNotBlank()) {
+                        append("      - ${vol.trim()}\n")
+                    }
+                }
+            }
+
+            append("    restart: ${template.restartPolicy}\n")
+
+            if (template.envVars.isNotBlank() && template.envVars != "{}") {
+                try {
+                    val jsonElement = Json.parseToJsonElement(template.envVars)
+                    val jsonObject = jsonElement.jsonObject
+                    if (jsonObject.isNotEmpty()) {
+                        append("    environment:\n")
+                        jsonObject.forEach { (key, value) ->
+                            append("      - $key=${value.jsonPrimitive.content}\n")
+                        }
+                    }
+                } catch (e: Exception) {
+                    append("    # Error parsing env_vars JSON: ${e.message}\n")
+                }
+            }
+        }
         _uiState.update { it.copy(generatedYaml = yaml) }
     }
 }
