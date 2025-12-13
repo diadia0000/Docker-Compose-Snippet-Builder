@@ -63,8 +63,20 @@
 ---
 
 ## 📱 畫面截圖
+#### 主畫面
+<img src="picture/user-ui/img.png" width="50%">  
 
-![使用者架構圖](./picture/使用者架構圖.png)
+#### 新增畫面
+<img src="picture/user-ui/add.png" width="50%">  
+
+#### 搜尋畫面
+<img src="picture/user-ui/search.png" width="50%">  
+
+#### 內部畫面
+<img src="picture/user-ui/detail.png" width="50%">
+
+#### 刪除畫面
+<img src="picture/user-ui/delete.png" width="50%">
 
 ---
 
@@ -90,10 +102,6 @@
 
 ---
 
-## 🔄 MVVM 架構
-
-![MVVM 行為交互圖](./picture/MVVM%20行為交互圖%20(Sequence%20Diagram).png)
-
 ### 各層職責
 
 - **View Layer**: Composable UI，訂閱 `StateFlow` 並顯示狀態
@@ -103,8 +111,7 @@
 ---
 
 ## ☁️ 雲端整合
-
-![Supabase 資料表](./picture/supabase-table.png)
+使用supabase作為雲端資料庫架構做為yaml檔案資料存放
 
 ### 同步策略
 

@@ -128,14 +128,3 @@ class TemplateRepository(
     }
 }
 ```
-
----
-
-## 優勢總結
-
-| 優勢 | 說明 |
-|------|------|
-| **可測試性** | ViewModel 與 Repository 可獨立進行單元測試，不依賴 Android Framework |
-| **職責分離** | View 只負責渲染，ViewModel 只負責狀態管理，Repository 只負責資料操作 |
-| **響應式更新** | 透過 Flow 實現資料變化自動通知 UI，無需手動刷新 |
-| **錯誤隔離** | 網路錯誤不影響本地操作，提升使用者體驗 |
