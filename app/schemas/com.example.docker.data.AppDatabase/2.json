@@ -1,0 +1,77 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 2,
+    "identityHash": "66d83447ecd381f7a79e8ce9ae8dcee5",
+    "entities": [
+      {
+        "tableName": "service_templates",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `image` TEXT NOT NULL, `ports` TEXT NOT NULL, `volumes` TEXT NOT NULL, `env_vars` TEXT NOT NULL, `restart_policy` TEXT NOT NULL DEFAULT 'no', `created_at` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "image",
+            "columnName": "image",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ports",
+            "columnName": "ports",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "volumes",
+            "columnName": "volumes",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "envVars",
+            "columnName": "env_vars",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "restartPolicy",
+            "columnName": "restart_policy",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'no'"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '66d83447ecd381f7a79e8ce9ae8dcee5')"
+    ]
+  }
+}
