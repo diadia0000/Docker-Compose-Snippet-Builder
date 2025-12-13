@@ -1,22 +1,31 @@
 package com.example.docker.ui.screens
 
 import android.app.Application
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.Label
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.docker.DockerApplication
+import com.example.docker.ui.theme.*
 import com.example.docker.viewmodel.FormViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,90 +40,274 @@ fun FormScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
+    val isEditing = templateId != null
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (templateId == null) "New Service" else "Edit Service") },
+                title = {
+                    Column {
+                        Text(
+                            if (isEditing) "✏️ Edit Service" else "✨ New Service",
+                            fontWeight = FontWeight.Bold
+                        )
+                        if (uiState.name.isNotEmpty()) {
+                            Text(
+                                uiState.name,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
         }
     ) { innerPadding ->
         if (uiState.isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator(color = DockerBlue)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Loading...", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
         } else {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .padding(16.dp)
-                    .verticalScroll(scrollState),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .verticalScroll(scrollState)
             ) {
-                OutlinedTextField(
-                    value = uiState.name,
-                    onValueChange = viewModel::updateName,
-                    label = { Text("Service Name") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                OutlinedTextField(
-                    value = uiState.image,
-                    onValueChange = viewModel::updateImage,
-                    label = { Text("Image (e.g., nginx:latest)") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                OutlinedTextField(
-                    value = uiState.ports,
-                    onValueChange = viewModel::updatePorts,
-                    label = { Text("Ports (e.g., 8080:80)") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                OutlinedTextField(
-                    value = uiState.volumes,
-                    onValueChange = viewModel::updateVolumes,
-                    label = { Text("Volumes (e.g., ./data:/data)") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                OutlinedTextField(
-                    value = uiState.envVars,
-                    onValueChange = viewModel::updateEnvVars,
-                    label = { Text("Env Vars (JSON)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 3
-                )
-
-                Text("Restart Policy", style = MaterialTheme.typography.titleSmall)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    listOf("no", "always", "on-failure").forEach { policy ->
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            RadioButton(
-                                selected = uiState.restartPolicy == policy,
-                                onClick = { viewModel.updateRestartPolicy(policy) }
+                // Header Card with gradient
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.linearGradient(
+                                    colors = listOf(DockerBlue, AccentCyan)
+                                )
                             )
-                            Text(policy)
-                            Spacer(modifier = Modifier.width(8.dp))
+                            .padding(20.dp)
+                    ) {
+                        Column {
+                            Text(
+                                "🐳 Service Configuration",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                "Configure your Docker service template",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.White.copy(alpha = 0.8f)
+                            )
                         }
                     }
                 }
 
-                Button(
-                    onClick = { viewModel.save(onSuccess = onNavigateBack) },
-                    modifier = Modifier.fillMaxWidth()
+                // Form Fields
+                Column(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text("Save")
+                    FancyTextField(
+                        value = uiState.name,
+                        onValueChange = viewModel::updateName,
+                        label = "Service Name",
+                        placeholder = "e.g., my-nginx-server",
+                        icon = Icons.AutoMirrored.Outlined.Label,
+                        iconTint = DockerBlue
+                    )
+
+                    FancyTextField(
+                        value = uiState.image,
+                        onValueChange = viewModel::updateImage,
+                        label = "Docker Image",
+                        placeholder = "e.g., nginx:latest",
+                        icon = Icons.Outlined.Storage,
+                        iconTint = AccentCyan
+                    )
+
+                    FancyTextField(
+                        value = uiState.ports,
+                        onValueChange = viewModel::updatePorts,
+                        label = "Port Mapping",
+                        placeholder = "e.g., 8080:80",
+                        icon = Icons.Outlined.SettingsEthernet,
+                        iconTint = AccentOrange
+                    )
+
+                    FancyTextField(
+                        value = uiState.volumes,
+                        onValueChange = viewModel::updateVolumes,
+                        label = "Volume Mapping",
+                        placeholder = "e.g., ./data:/data",
+                        icon = Icons.Outlined.Folder,
+                        iconTint = AccentPurple
+                    )
+
+                    FancyTextField(
+                        value = uiState.envVars,
+                        onValueChange = viewModel::updateEnvVars,
+                        label = "Environment Variables",
+                        placeholder = "{\"KEY\": \"value\"}",
+                        icon = Icons.Outlined.Code,
+                        iconTint = StatusSuccess,
+                        minLines = 3
+                    )
+
+                    // Restart Policy Section
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Outlined.Refresh,
+                                    contentDescription = null,
+                                    tint = DockerBlue,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    "Restart Policy",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                listOf("no", "always", "on-failure").forEach { policy ->
+                                    val isSelected = uiState.restartPolicy == policy
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = { viewModel.updateRestartPolicy(policy) },
+                                        label = { Text(policy) },
+                                        leadingIcon = if (isSelected) {
+                                            {
+                                                Icon(
+                                                    Icons.Outlined.Check,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            }
+                                        } else null,
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = DockerBlue,
+                                            selectedLabelColor = Color.White,
+                                            selectedLeadingIconColor = Color.White
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Save Button
+                    Button(
+                        onClick = { viewModel.save(onSuccess = onNavigateBack) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                            .shadow(8.dp, RoundedCornerShape(16.dp)),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = DockerBlue
+                        )
+                    ) {
+                        Icon(Icons.Filled.Save, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            if (isEditing) "Update Service" else "Create Service",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(32.dp))
                 }
             }
         }
+    }
+}
+
+@Composable
+fun FancyTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    placeholder: String,
+    icon: ImageVector,
+    iconTint: Color,
+    minLines: Int = 1
+) {
+    Column {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconTint,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            placeholder = {
+                Text(
+                    placeholder,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                )
+            },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = iconTint,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface
+            ),
+            minLines = minLines
+        )
     }
 }
 
