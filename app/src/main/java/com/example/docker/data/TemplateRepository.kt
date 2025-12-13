@@ -10,38 +10,34 @@ class TemplateRepository(
 ) {
     val allTemplates: Flow<List<ServiceTemplate>> = templateDao.getAllTemplates()
 
-    fun getTemplate(id: Int): Flow<ServiceTemplate> = templateDao.getTemplate(id)
-
     suspend fun insertTemplate(template: ServiceTemplate) {
         templateDao.insertTemplate(template)
-    }
-
-    suspend fun updateTemplate(template: ServiceTemplate) {
-        templateDao.updateTemplate(template)
     }
 
     suspend fun deleteTemplate(template: ServiceTemplate) {
         templateDao.deleteTemplate(template)
     }
 
-    // Supabase Integration (Day 4)
-
-    suspend fun uploadToCloud(template: ServiceTemplate) {
+    // Supabase Integration
+    suspend fun uploadTemplates(templates: List<ServiceTemplate>) {
         try {
-            supabaseClient.postgrest["service_templates"].upsert(template)
+            if (templates.isNotEmpty()) {
+                supabaseClient.postgrest["service_templates"].upsert(templates)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
-            // Handle error
+            throw e // Rethrow or handle as needed by ViewModel
         }
     }
 
-    suspend fun downloadFromCloud(): List<ServiceTemplate> {
+    suspend fun downloadTemplates(): List<ServiceTemplate> {
         return try {
             val result = supabaseClient.postgrest["service_templates"]
                 .select()
                 .decodeList<ServiceTemplate>()
 
-            // Save to local DB
+            // Sync logic: Overwrite or Merge?
+            // Simple strategy: Insert/Update local DB with remote data
             result.forEach { templateDao.insertTemplate(it) }
             result
         } catch (e: Exception) {

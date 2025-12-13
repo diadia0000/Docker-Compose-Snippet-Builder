@@ -7,46 +7,36 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import com.example.docker.ui.theme.DockerTheme
-import io.github.jan.supabase.createSupabaseClient
-import io.github.jan.supabase.postgrest.Postgrest
-
+import androidx.lifecycle.ViewModelProvider
+import com.example.docker.ui.screens.TestScreen
+import com.example.docker.viewmodel.TemplateViewModel
+import com.example.docker.viewmodel.TemplateViewModelFactory
 
 class MainActivity : ComponentActivity() {
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val app = application as DockerApplication
+        val repository = app.repository
+
+        // Manually create ViewModel using ViewModelProvider
+        val factory = TemplateViewModelFactory(repository)
+        val viewModel = ViewModelProvider(this, factory)[TemplateViewModel::class.java]
+
         setContent {
             DockerTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+
+                    // Apply padding to avoid overlapping with system bars
+                    androidx.compose.foundation.layout.Box(modifier = Modifier.padding(innerPadding)) {
+                        TestScreen(viewModel = viewModel)
+                    }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    DockerTheme {
-        Greeting("Android")
     }
 }

@@ -1,7 +1,9 @@
 package com.example.docker.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Entity(tableName = "service_templates")
@@ -12,8 +14,18 @@ data class ServiceTemplate(
     val name: String,
     val image: String,
     val ports: String = "", // e.g., "8080:80"
-    val environment: String = "", // e.g., "KEY=VALUE"
     val volumes: String = "", // e.g., "/host:/container"
-    val yaml: String = "" // Generated YAML
+
+    @ColumnInfo(name = "env_vars")
+    @SerialName("env_vars")
+    val envVars: String = "{}", // Stores JSON string e.g. {"KEY":"VALUE"}
+
+    @ColumnInfo(name = "restart_policy", defaultValue = "no")
+    @SerialName("restart_policy")
+    val restartPolicy: String = "no", // Default "no" (This is for V2)
+
+    @ColumnInfo(name = "created_at")
+    @SerialName("created_at")
+    val createdAt: Long = System.currentTimeMillis()
 )
 
