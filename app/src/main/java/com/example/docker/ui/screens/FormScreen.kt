@@ -1,14 +1,17 @@
 package com.example.docker.ui.screens
 
 import android.app.Application
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Label
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -137,6 +140,32 @@ fun FormScreen(
                         iconTint = DockerBlue
                     )
 
+                    Column {
+                        FancyTextField(
+                            value = uiState.category,
+                            onValueChange = viewModel::updateCategory,
+                            label = "Category",
+                            placeholder = "e.g., Database, Web Server",
+                            icon = Icons.Outlined.Bookmarks,
+                            iconTint = AccentPurple
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(horizontal = 4.dp).horizontalScroll(rememberScrollState())
+                        ) {
+                            listOf("Web Server", "Database", "Cache", "Message Queue").forEach { cat ->
+                                SuggestionChip(
+                                    onClick = { viewModel.updateCategory(cat) },
+                                    label = { Text(cat) },
+                                    colors = SuggestionChipDefaults.suggestionChipColors(
+                                        containerColor = if(uiState.category == cat) DockerBlue.copy(alpha=0.1f) else Color.Transparent
+                                    )
+                                )
+                            }
+                        }
+                    }
+
                     FancyTextField(
                         value = uiState.image,
                         onValueChange = viewModel::updateImage,
@@ -164,15 +193,74 @@ fun FormScreen(
                         iconTint = AccentPurple
                     )
 
-                    FancyTextField(
-                        value = uiState.envVars,
-                        onValueChange = viewModel::updateEnvVars,
-                        label = "Environment Variables",
-                        placeholder = "{\"KEY\": \"value\"}",
-                        icon = Icons.Outlined.Code,
-                        iconTint = StatusSuccess,
-                        minLines = 3
-                    )
+                    // Environment Variables (Key-Value UI)
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                        )
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Outlined.Code, contentDescription = null, tint = StatusSuccess)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Environment Variables", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            if (uiState.envVarList.isEmpty()) {
+                                Text("No environment variables defined", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            
+                            uiState.envVarList.forEachIndexed { index, item ->
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                                ) {
+                                    OutlinedTextField(
+                                        value = item.key,
+                                        onValueChange = { viewModel.updateEnvVar(index, it, item.value) },
+                                        placeholder = { Text("Key") },
+                                        modifier = Modifier.weight(1f),
+                                        singleLine = true,
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                            unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                                        )
+                                    )
+                                    Text("=", fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp))
+                                    OutlinedTextField(
+                                        value = item.value,
+                                        onValueChange = { viewModel.updateEnvVar(index, item.key, it) },
+                                        placeholder = { Text("Value") },
+                                        modifier = Modifier.weight(1f),
+                                        singleLine = true,
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                            unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                                        )
+                                    )
+                                    IconButton(onClick = { viewModel.removeEnvVar(index) }) {
+                                        Icon(Icons.Outlined.Delete, contentDescription = "Remove", tint = MaterialTheme.colorScheme.error)
+                                    }
+                                }
+                            }
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            OutlinedButton(
+                                onClick = { viewModel.addEnvVar() },
+                                modifier = Modifier.fillMaxWidth(),
+                                border = BorderStroke(1.dp, DockerBlue),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = DockerBlue)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Add Variable")
+                            }
+                        }
+                    }
 
                     // Restart Policy Section
                     Card(

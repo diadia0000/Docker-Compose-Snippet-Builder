@@ -4,14 +4,24 @@ import android.app.Application
 import androidx.room.Room
 import com.example.docker.data.AppDatabase
 import com.example.docker.data.TemplateRepository
+import com.example.docker.data.LocalUserPreferencesRepository
 import com.example.docker.network.SupabaseClient
 
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
+import androidx.room.migration.Migration
 
 class DockerApplication : Application() {
+
+    private val MIGRATION_4_5 = object : Migration(4, 5) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("ALTER TABLE service_templates ADD COLUMN category TEXT NOT NULL DEFAULT 'General'")
+        }
+    }
+
     lateinit var database: AppDatabase
     lateinit var repository: TemplateRepository
+    lateinit var userPreferencesRepository: LocalUserPreferencesRepository
 
     override fun onCreate() {
         super.onCreate()
@@ -22,25 +32,10 @@ class DockerApplication : Application() {
             "docker_snippet_db"
         )
         .fallbackToDestructiveMigration()
-        .addCallback(object : RoomDatabase.Callback() {
-            override fun onCreate(db: SupportSQLiteDatabase) {
-                super.onCreate(db)
-                // Pre-fill with default data
-                val now = System.currentTimeMillis()
-
-                // Nginx
-                db.execSQL("INSERT INTO service_templates (name, image, ports, volumes, env_vars, restart_policy, created_at) VALUES ('nginx', 'nginx:latest', '80:80', '', '{}', 'always', $now)")
-
-                // Redis
-                db.execSQL("INSERT INTO service_templates (name, image, ports, volumes, env_vars, restart_policy, created_at) VALUES ('redis', 'redis:alpine', '6379:6379', '', '{}', 'always', $now)")
-
-                // Postgres
-                // Note: env_vars is a JSON string
-                db.execSQL("INSERT INTO service_templates (name, image, ports, volumes, env_vars, restart_policy, created_at) VALUES ('postgres', 'postgres:13', '5432:5432', 'pgdata:/var/lib/postgresql/data', '{\"POSTGRES_PASSWORD\":\"example\"}', 'always', $now)")
-            }
-        })
+        .addMigrations(MIGRATION_4_5)
         .build()
 
         repository = TemplateRepository(database.templateDao(), SupabaseClient.client, applicationContext)
+        userPreferencesRepository = LocalUserPreferencesRepository(applicationContext)
     }
 }

@@ -11,6 +11,7 @@ import androidx.navigation.navArgument
 import com.example.docker.ui.screens.DetailScreen
 import com.example.docker.ui.screens.FormScreen
 import com.example.docker.ui.screens.HomeScreen
+import com.example.docker.ui.screens.SettingsScreen
 
 @Composable
 fun AppNavGraph(
@@ -25,7 +26,14 @@ fun AppNavGraph(
         composable("home") {
             HomeScreen(
                 onNavigateToForm = { navController.navigate("form") },
-                onNavigateToDetail = { id -> navController.navigate("detail/$id") }
+                onNavigateToDetail = { id -> navController.navigate("detail/$id") },
+                onNavigateToSettings = { navController.navigate("settings") }
+            )
+        }
+        
+        composable("settings") {
+            SettingsScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 

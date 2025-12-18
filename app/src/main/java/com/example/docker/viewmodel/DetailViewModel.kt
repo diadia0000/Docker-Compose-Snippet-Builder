@@ -39,6 +39,10 @@ class DetailViewModel(
             _uiState.update { it.copy(isLoading = true) }
             val template = dao.getTemplate(templateId).firstOrNull()
             _uiState.update { it.copy(template = template, isLoading = false) }
+            // Update last used timestamp
+            if (template != null) {
+                repository.updateLastUsed(templateId)
+            }
         }
     }
 

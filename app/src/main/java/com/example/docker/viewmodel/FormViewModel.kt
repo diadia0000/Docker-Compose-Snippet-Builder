@@ -12,6 +12,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.json.JSONObject
+
+data class EnvVarItem(val key: String, val value: String)
 
 data class FormUiState(
     val name: String = "",
@@ -20,6 +23,8 @@ data class FormUiState(
     val volumes: String = "",
     val envVars: String = "",
     val restartPolicy: String = "no",
+    val category: String = "General",
+    val envVarList: List<EnvVarItem> = emptyList(),
     val isLoading: Boolean = false
 )
 
@@ -53,7 +58,9 @@ class FormViewModel(
                         ports = template.ports,
                         volumes = template.volumes,
                         envVars = template.envVars,
+                        envVarList = parseEnvVars(template.envVars),
                         restartPolicy = template.restartPolicy,
+                        category = template.category,
                         isLoading = false
                     )
                 }
@@ -69,6 +76,54 @@ class FormViewModel(
     fun updateVolumes(value: String) { _uiState.update { it.copy(volumes = value) } }
     fun updateEnvVars(value: String) { _uiState.update { it.copy(envVars = value) } }
     fun updateRestartPolicy(value: String) { _uiState.update { it.copy(restartPolicy = value) } }
+    fun updateCategory(value: String) { _uiState.update { it.copy(category = value) } }
+
+    fun addEnvVar() {
+        _uiState.update { it.copy(envVarList = it.envVarList + EnvVarItem("", "")) }
+    }
+
+    fun updateEnvVar(index: Int, key: String, value: String) {
+        _uiState.update { 
+            val newList = it.envVarList.toMutableList()
+            if (index in newList.indices) {
+                newList[index] = EnvVarItem(key, value)
+                it.copy(envVarList = newList)
+            } else it
+        }
+    }
+
+    fun removeEnvVar(index: Int) {
+        _uiState.update { 
+            val newList = it.envVarList.toMutableList()
+            if (index in newList.indices) {
+                newList.removeAt(index)
+                it.copy(envVarList = newList)
+            } else it
+        }
+    }
+
+    private fun parseEnvVars(jsonString: String): List<EnvVarItem> {
+        return try {
+            val json = JSONObject(if (jsonString.isBlank()) "{}" else jsonString)
+            val list = mutableListOf<EnvVarItem>()
+            json.keys().forEach { key ->
+                list.add(EnvVarItem(key, json.getString(key)))
+            }
+            list
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun serializeEnvVars(list: List<EnvVarItem>): String {
+        val json = JSONObject()
+        list.forEach { 
+            if (it.key.isNotBlank()) {
+                json.put(it.key, it.value) 
+            }
+        }
+        return json.toString()
+    }
 
     fun save(onSuccess: () -> Unit) {
         viewModelScope.launch {
@@ -80,8 +135,9 @@ class FormViewModel(
                 image = state.image,
                 ports = state.ports,
                 volumes = state.volumes,
-                envVars = state.envVars,
+                envVars = serializeEnvVars(state.envVarList),
                 restartPolicy = state.restartPolicy,
+                category = state.category,
                 createdAt = System.currentTimeMillis()
             )
             repository.insertTemplate(template)

@@ -5,6 +5,8 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -17,6 +19,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -53,6 +56,23 @@ fun DetailScreen(
     val context = LocalContext.current
     val scrollState = rememberScrollState()
     var showDeleteDialog by remember { mutableStateOf(false) }
+    
+    // Export launcher
+    var yamlToExport by remember { mutableStateOf("") }
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/x-yaml")
+    ) { uri ->
+        uri?.let {
+            try {
+                context.contentResolver.openOutputStream(it)?.use { stream ->
+                    stream.write(yamlToExport.toByteArray())
+                }
+                Toast.makeText(context, "✅ Saved successfully!", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(context, "❌ Error saving file", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     // Delete confirmation dialog
     if (showDeleteDialog) {
@@ -148,6 +168,7 @@ fun DetailScreen(
         } else {
             val template = uiState.template!!
             val yaml = YamlGenerator.toYaml(template)
+            yamlToExport = yaml
 
             Column(
                 modifier = Modifier
@@ -298,25 +319,47 @@ fun DetailScreen(
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
-                        FilledTonalButton(
-                            onClick = {
-                                val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                val clip = ClipData.newPlainText("YAML", yaml)
-                                clipboardManager.setPrimaryClip(clip)
-                                Toast.makeText(context, "✅ YAML copied to clipboard!", Toast.LENGTH_SHORT).show()
-                            },
-                            colors = ButtonDefaults.filledTonalButtonColors(
-                                containerColor = DockerBlue.copy(alpha = 0.1f),
-                                contentColor = DockerBlue
-                            )
-                        ) {
-                            Icon(
-                                Icons.Default.ContentCopy,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Copy")
+                        Row {
+                            FilledTonalButton(
+                                onClick = {
+                                    val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                    val clip = ClipData.newPlainText("YAML", yaml)
+                                    clipboardManager.setPrimaryClip(clip)
+                                    Toast.makeText(context, "✅ YAML copied to clipboard!", Toast.LENGTH_SHORT).show()
+                                },
+                                colors = ButtonDefaults.filledTonalButtonColors(
+                                    containerColor = DockerBlue.copy(alpha = 0.1f),
+                                    contentColor = DockerBlue
+                                )
+                            ) {
+                                Icon(
+                                    Icons.Default.ContentCopy,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Copy")
+                            }
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            FilledTonalButton(
+                                onClick = {
+                                    exportLauncher.launch("${template.name.replace(" ", "_")}.yml")
+                                },
+                                colors = ButtonDefaults.filledTonalButtonColors(
+                                    containerColor = AccentPurple.copy(alpha = 0.1f),
+                                    contentColor = AccentPurple
+                                )
+                            ) {
+                                Icon(
+                                    Icons.Default.Save,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Export")
+                            }
                         }
                     }
 

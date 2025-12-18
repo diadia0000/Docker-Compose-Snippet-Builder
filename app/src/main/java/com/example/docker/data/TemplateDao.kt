@@ -36,5 +36,11 @@ interface TemplateDao {
 
     @Query("DELETE FROM service_templates")
     suspend fun deleteAll()
+
+    @Query("UPDATE service_templates SET is_favorite = :isFavorite WHERE id = :id")
+    suspend fun updateFavoriteStatus(id: Int, isFavorite: Boolean)
+
+    @Query("UPDATE service_templates SET last_used = :timestamp WHERE id = :id")
+    suspend fun updateLastUsed(id: Int, timestamp: Long)
 }
 

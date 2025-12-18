@@ -6,6 +6,7 @@ import com.example.docker.utils.NetworkUtils
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 
 class TemplateRepository(
     private val templateDao: TemplateDao,
@@ -29,7 +30,11 @@ class TemplateRepository(
         // 2. Try to sync to Supabase if network available
         if (NetworkUtils.isNetworkAvailable(context)) {
             try {
-                supabaseClient.postgrest["service_templates"].upsert(template)
+                // Use DTO to exclude local-only fields
+                // onConflict = "name" ensures upsert uses name field to detect duplicates
+                supabaseClient.postgrest["service_templates"].upsert(template.toDto()) {
+                    onConflict = "name"
+                }
                 Log.d(TAG, "Template synced to Supabase: ${template.name}")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to sync template to Supabase: ${e.message}")
@@ -63,7 +68,12 @@ class TemplateRepository(
         }
         try {
             if (templates.isNotEmpty()) {
-                supabaseClient.postgrest["service_templates"].upsert(templates)
+                // Convert to DTO to exclude local-only fields
+                val dtos = templates.map { it.toDto() }
+                // onConflict = "name" ensures upsert uses name field to detect duplicates
+                supabaseClient.postgrest["service_templates"].upsert(dtos) {
+                    onConflict = "name"
+                }
                 Log.d(TAG, "Uploaded ${templates.size} templates to Supabase")
             }
         } catch (e: Exception) {
@@ -77,20 +87,49 @@ class TemplateRepository(
             throw Exception("No network connection available")
         }
         return try {
-            val result = supabaseClient.postgrest["service_templates"]
+            // Download DTOs from Supabase
+            val dtos = supabaseClient.postgrest["service_templates"]
                 .select()
-                .decodeList<ServiceTemplate>()
+                .decodeList<ServiceTemplateDto>()
+
+            Log.d(TAG, "Downloaded ${dtos.size} templates from Supabase")
+
+            // Preserve local-only flags (isFavorite, lastUsed)
+            // We match by name since IDs might differ or be overwritten
+            val localTemplates = templateDao.getAllTemplates().first()
+            val localStateMap = localTemplates.associateBy({ it.name }, { Pair(it.isFavorite, it.lastUsed) })
+
+            // Convert DTOs to ServiceTemplate with preserved local state
+            // IMPORTANT: Set id to 0 to let Room auto-generate new local IDs
+            val mergedResult = dtos.map { dto ->
+                val localState = localStateMap[dto.name]
+                dto.toServiceTemplate(
+                    isFavorite = localState?.first ?: false,
+                    lastUsed = localState?.second ?: 0L
+                )
+            }
 
             // Sync logic: Clear local and replace with remote data
             // This ensures no duplicates
             templateDao.deleteAll()
-            templateDao.insertAll(result)
-            Log.d(TAG, "Downloaded and synced ${result.size} templates from Supabase")
-            result
+            templateDao.insertAll(mergedResult)
+            Log.d(TAG, "Downloaded and synced ${mergedResult.size} templates from Supabase")
+            mergedResult
         } catch (e: Exception) {
             Log.e(TAG, "Failed to download templates: ${e.message}")
+            e.printStackTrace()
             throw e
         }
+    }
+
+    suspend fun updateFavoriteStatus(id: Int, isFavorite: Boolean) {
+        templateDao.updateFavoriteStatus(id, isFavorite)
+        // Note: We might want to sync this status to cloud too, but for simplicity let's keep it local first, 
+        // or upsert the whole object if we had it. Since this is just a flag, local is fine for "Simple Difficulty".
+    }
+
+    suspend fun updateLastUsed(id: Int) {
+        templateDao.updateLastUsed(id, System.currentTimeMillis())
     }
 }
 
