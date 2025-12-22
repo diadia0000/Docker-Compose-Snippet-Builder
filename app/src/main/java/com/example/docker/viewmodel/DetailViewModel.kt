@@ -30,6 +30,8 @@ class DetailViewModel(
     private val _uiState = MutableStateFlow(DetailUiState())
     val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
 
+    private var hasUpdatedLastUsed = false
+
     init {
         loadTemplate()
     }
@@ -37,12 +39,24 @@ class DetailViewModel(
     private fun loadTemplate() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
+            // Use collect to continuously observe database changes
+            dao.getTemplate(templateId).collect { template ->
+                _uiState.update { it.copy(template = template, isLoading = false) }
+                // Update last used timestamp only on first load
+                if (template != null && !hasUpdatedLastUsed) {
+                    hasUpdatedLastUsed = true
+                    repository.updateLastUsed(templateId)
+                }
+            }
+        }
+    }
+
+    fun refresh() {
+        // Force reload from database - useful when returning from edit screen
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
             val template = dao.getTemplate(templateId).firstOrNull()
             _uiState.update { it.copy(template = template, isLoading = false) }
-            // Update last used timestamp
-            if (template != null) {
-                repository.updateLastUsed(templateId)
-            }
         }
     }
 

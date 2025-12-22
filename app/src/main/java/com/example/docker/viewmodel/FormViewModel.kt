@@ -40,6 +40,9 @@ class FormViewModel(
     private val _uiState = MutableStateFlow(FormUiState())
     val uiState: StateFlow<FormUiState> = _uiState.asStateFlow()
 
+    // Store original template data to preserve fields like createdAt, isFavorite, lastUsed when editing
+    private var originalTemplate: ServiceTemplate? = null
+
     init {
         if (templateId != null) {
             loadTemplate(templateId)
@@ -51,6 +54,7 @@ class FormViewModel(
             _uiState.update { it.copy(isLoading = true) }
             val template = dao.getTemplate(id).firstOrNull()
             if (template != null) {
+                originalTemplate = template  // Save original for preserving fields during update
                 _uiState.update {
                     it.copy(
                         name = template.name,
@@ -138,7 +142,10 @@ class FormViewModel(
                 envVars = serializeEnvVars(state.envVarList),
                 restartPolicy = state.restartPolicy,
                 category = state.category,
-                createdAt = System.currentTimeMillis()
+                // Preserve original values when editing, use defaults for new template
+                createdAt = originalTemplate?.createdAt ?: System.currentTimeMillis(),
+                isFavorite = originalTemplate?.isFavorite ?: false,
+                lastUsed = originalTemplate?.lastUsed ?: 0L
             )
             repository.insertTemplate(template)
             _uiState.update { it.copy(isLoading = false) }
